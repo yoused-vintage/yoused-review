@@ -130,36 +130,7 @@
   <p class="subtitle">Every piece here begins a new chapter, and we'd love to hear about yours — sharing your experience on Google would mean a great deal to us.</p>
 
   <p class="section-label">What stood out to you?</p>
-  <div class="option-list">
-    <button class="option-btn" data-text="The staff were incredibly friendly and helpful.">
-      <span class="checkmark">✓</span>
-      <span>Friendly staff</span>
-    </button>
-    <button class="option-btn" data-text="Everything felt high quality, with such great attention to detail.">
-      <span class="checkmark">✓</span>
-      <span>High quality craftsmanship</span>
-    </button>
-    <button class="option-btn" data-text="Loved how every piece truly felt like a one-of-a-kind item made just for you — exactly like the concept promises.">
-      <span class="checkmark">✓</span>
-      <span>Unique concept</span>
-    </button>
-    <button class="option-btn" data-text="Great selection, felt like real treasure hunting.">
-      <span class="checkmark">✓</span>
-      <span>Great selection</span>
-    </button>
-    <button class="option-btn" data-text="Genuinely one-of-a-kind pieces you won't find anywhere else.">
-      <span class="checkmark">✓</span>
-      <span>One-of-a-kind pieces</span>
-    </button>
-    <button class="option-btn" data-text="I'll definitely come back again.">
-      <span class="checkmark">✓</span>
-      <span>Would visit again</span>
-    </button>
-    <button class="option-btn" data-text="Highly recommend this place to anyone — an absolute must-visit.">
-      <span class="checkmark">✓</span>
-      <span>Highly recommend</span>
-    </button>
-  </div>
+  <div class="option-list" id="optionList"></div>
 
   <p class="section-label">Your review</p>
   <div class="textarea-wrapper">
@@ -171,29 +142,90 @@
 </div>
 
 <script>
-  const optionButtons = document.querySelectorAll('.option-btn');
+  // PHRASE_POOL: the full set of selectable review phrases.
+  // Each entry has a short "label" (shown on the button) and the full "text"
+  // (appended to the review textarea when the button is selected).
+  //
+  // On every page load, POOL_DISPLAY_COUNT phrases are chosen at RANDOM from
+  // this pool and rendered as the option buttons below. This keeps the
+  // wording customers see varied, instead of everyone being offered (and
+  // posting) the exact same handful of phrases.
+  //
+  // IMPORTANT: this selection must stay purely random. It must never be
+  // conditioned on star rating, sentiment, or any other signal — doing so
+  // would be review-gating, which violates Google's review policies.
+  //
+  // To add or remove phrases, edit this array only. Nothing else in this
+  // file needs to change.
+  const PHRASE_POOL = [
+    { label: "Friendly staff", text: "The staff were incredibly friendly and helpful." },
+    { label: "High quality craftsmanship", text: "Everything felt high quality, with such great attention to detail." },
+    { label: "Unique concept", text: "Loved how every piece truly felt like a one-of-a-kind item made just for you — exactly like the concept promises." },
+    { label: "Great selection", text: "Great selection, felt like real treasure hunting." },
+    { label: "One-of-a-kind pieces", text: "Genuinely one-of-a-kind pieces you won't find anywhere else." },
+    { label: "Would visit again", text: "I'll definitely come back again." },
+    { label: "Highly recommend", text: "Highly recommend this place to anyone — an absolute must-visit." },
+    { label: "Great value", text: "Great value for how stylish and well-made everything was." },
+    { label: "Modern take on classic pieces", text: "I loved the modern twist on classic fabrics like tweed." }
+  ];
+
+  const POOL_DISPLAY_COUNT = 6;
+
+  const optionList = document.getElementById('optionList');
   const reviewTextarea = document.getElementById('reviewText');
 
-  optionButtons.forEach(button => {
-    button.addEventListener('click', () => {
-      const text = button.getAttribute('data-text');
-      const isActive = button.classList.contains('active');
+  function pickRandomPhrases(pool, count) {
+    const shuffled = pool.slice();
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled.slice(0, Math.min(count, shuffled.length));
+  }
 
-      if (isActive) {
-        // Deselect: remove only this phrase, keep any manual edits intact
-        button.classList.remove('active');
-        reviewTextarea.value = reviewTextarea.value
-          .replace(text, '')
-          .replace(/\s{2,}/g, ' ')
-          .trim();
-      } else {
-        // Select: append to the end, without overwriting manual edits
-        button.classList.add('active');
-        const current = reviewTextarea.value.trim();
-        reviewTextarea.value = current ? current + ' ' + text : text;
-      }
+  function renderOptions() {
+    optionList.innerHTML = '';
+    const selectedPhrases = pickRandomPhrases(PHRASE_POOL, POOL_DISPLAY_COUNT);
+
+    selectedPhrases.forEach(phrase => {
+      const button = document.createElement('button');
+      button.className = 'option-btn';
+      button.setAttribute('data-text', phrase.text);
+
+      const checkmark = document.createElement('span');
+      checkmark.className = 'checkmark';
+      checkmark.textContent = '✓';
+
+      const labelSpan = document.createElement('span');
+      labelSpan.textContent = phrase.label;
+
+      button.appendChild(checkmark);
+      button.appendChild(labelSpan);
+
+      button.addEventListener('click', () => {
+        const text = button.getAttribute('data-text');
+        const isActive = button.classList.contains('active');
+
+        if (isActive) {
+          // Deselect: remove only this phrase, keep any manual edits intact
+          button.classList.remove('active');
+          reviewTextarea.value = reviewTextarea.value
+            .replace(text, '')
+            .replace(/\s{2,}/g, ' ')
+            .trim();
+        } else {
+          // Select: append to the end, without overwriting manual edits
+          button.classList.add('active');
+          const current = reviewTextarea.value.trim();
+          reviewTextarea.value = current ? current + ' ' + text : text;
+        }
+      });
+
+      optionList.appendChild(button);
     });
-  });
+  }
+
+  renderOptions();
 
   function copyAndRedirect() {
     const textToCopy = reviewTextarea.value.trim();
